@@ -24,29 +24,32 @@ void inputProductData(struct Product *product) {
 }
 
 void addSale(struct Sale *sale, struct Product products[], int numProducts) {
-   sale->productId = 0;
-   sale->quantity = 0;
+    sale->productId = 0;
+    sale->quantity = 0;
 
-   printf("ID Produk: ");
-   while (scanf("%d", &sale->productId) != 1 || sale->productId < 1 || sale->productId > numProducts) {
-       printf("ID Produk tidak valid.\n");
-       printf("ID Produk: ");
-       while (getchar() != '\n');
-   }
+    printf("ID Produk: ");
+    while (scanf("%d", &sale->productId) != 1 || sale->productId < 1 || sale->productId > numProducts) {
+        printf("ID Produk tidak valid.\n");
+        while (getchar() != '\n');
+        return;
+    }
 
-   printf("Jumlah: ");
-   while (scanf("%d", &sale->quantity) != 1 || sale->quantity <= 0 || sale->quantity > products[sale->productId - 1].stock) {
-       if (sale->quantity <= 0) {
-           printf("Jumlah harus lebih besar dari 0.\n");
-       } else {
-           printf("Stok tidak mencukupi.\n");
-       }
-       printf("Jumlah: ");
-       while (getchar() != '\n');
-   }
+    printf("Jumlah: ");
+    int inputQuantity;
+    while (scanf("%d", &inputQuantity) != 1) {
+        printf("Jumlah tidak valid. Masukkan angka.\n");
+        while (getchar() != '\n');
+    }
 
-   products[sale->productId - 1].stock -= sale->quantity;
-   printf("Penjualan berhasil ditambahkan.\n");
+    if (inputQuantity <= 0) {
+        printf("Jumlah harus lebih besar dari 0.\n");
+    } else if (inputQuantity > products[sale->productId - 1].stock) {
+        printf("Stok tidak mencukupi.\n");
+    } else {
+        sale->quantity = inputQuantity;
+        products[sale->productId - 1].stock -= sale->quantity;
+        printf("Penjualan berhasil ditambahkan.\n");
+    }
 }
 
 void displayTotalSales(struct Sale sales[], struct Product products[], int numSales) {
@@ -57,7 +60,7 @@ void displayTotalSales(struct Sale sales[], struct Product products[], int numSa
             int productId = sales[i].productId;
             int quantity = sales[i].quantity;
             float total = quantity * products[productId - 1].price;
-            printf("%s: %d x Rp%.2f = Rp%.2f\n", products[productId - 1].name, quantity, products[productId - 1].price, total);
+            printf("%d. %s: %d x Rp%.2f = Rp%.2f\n", i + 1, products[productId - 1].name, quantity, products[productId - 1].price, total);
         }
     }
 }
@@ -79,7 +82,7 @@ float calculateTotalSales(struct Sale sales[], struct Product products[], int nu
 void displayProducts(struct Product products[], int numProducts) {
     printf("\nDaftar Produk:\n");
     for (int i = 0; i < numProducts; i++) {
-        printf("%d. %s (ID: %d)\n", i + 1, products[i].name, products[i].id);
+        printf("%d. %s (ID: %d)\n", i + 1, products[i].name, i + 1);
         printf("   Harga: Rp%.2f | Stok: %d\n", products[i].price, products[i].stock);
     }
 }
@@ -102,7 +105,13 @@ void deleteProduct(struct Product products[], int *numProducts) {
     printf("Produk berhasil dihapus.\n");
 }
 
-void deleteSale(struct Sale sales[], int *numSales) {
+void updateProducts(struct Product products[], int numProducts, int quantity) {
+    for (int i = 0; i < numProducts; i++) {
+        products[i].stock += quantity;
+    }
+}
+
+void deleteSale(struct Sale sales[], struct Product products[], int *numSales) {
     int saleId;
     printf("Masukkan ID penjualan yang akan dihapus: ");
     scanf("%d", &saleId);
@@ -112,13 +121,16 @@ void deleteSale(struct Sale sales[], int *numSales) {
         return;
     }
 
-    for (int i = saleId - 1; i < *numSales - 1; i++) {
-        sales[i] = sales[i + 1];
-    }
+    int productId = sales[saleId - 1].productId;
+    int quantity = sales[saleId - 1].quantity;
+    products[productId - 1].stock += quantity;
 
     (*numSales)--;
+    sales[saleId - 1] = sales[*numSales];
+
     printf("Penjualan berhasil dihapus.\n");
 }
+
 
 void saveProductsToFile(struct Product products[], int numProducts) {
     FILE *file = fopen("products.txt", "w");
@@ -241,7 +253,7 @@ int main() {
                 if (numSales == 0) {
                     printf("Tidak ada penjualan yang bisa dihapus.\n");
                 } else {
-                    deleteSale(sales, &numSales);
+                    deleteSale(sales, products, &numSales);
                 }
                 break;
             case 5:
